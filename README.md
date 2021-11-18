@@ -1,2 +1,2 @@
-# Grades_Alcohol_LoveLife
+# Grades_factors
 Analysis of the effect of alcohol on grades

@@ -1,0 +1,127 @@
+---
+title: 'Project 2nd attempt'
+author: "Aashna Rungta"
+
+date: "November 14, 2021"
+output:
+  html_document: default
+  header-includes: \usepackage{color}
+fontsize: 12pt
+margin: 1in
+---
+
+
+```{r setup, echo=FALSE, message=F, warning=F}
+
+    rm(list = ls())
+#saving file to R files folder
+setwd("/Users/aashnarungta/SCU/EconometricswithR/R_files/Project")
+
+### Load the packages 
+    library(doBy)
+    library(dplyr)
+    library(foreign)
+    library(ggplot2)
+    library(knitr)
+    library(lmtest)
+    library(readstata13)
+    library(sandwich)
+    library(stargazer)
+    library(AER)
+    library(gdata)
+    library(wooldridge)
+    library(openintro)
+    library(tidyr)
+    library(tidyverse)
+
+cse=function(reg) {
+    rob=sqrt(diag(vcovHC(reg, type="HC1")))
+    return(rob)
+    }
+    
+```
+
+
+
+```{r data, echo=FALSE, message=F, warning=FALSE, include=FALSE}
+#loading the data
+student=read.csv("student-mat.csv", header=T, sep=",")
+
+```
+
+
+```{r simple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+student <- student %>% rowwise() %>%
+  mutate(Grades = sum(c_across(G1:G3)))
+
+
+ggplot(student, aes(x=Dalc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Daily Alc consumption on grades", x = "Daily Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+
+ggplot(student, aes(x=Walc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Weekly Alc consumption on grades", x = "Weekly Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+```
+
+
+```{r multiple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+# Inserting scatterplot graphs of Looks on other variables.
+
+Grades_dalc = lm(Grades ~ Dalc, data = student)
+Grades_abs = lm(Grades ~ Dalc + absences, data = student)
+Grades_health = lm(Grades ~ Dalc + absences + health, data = student)
+Grades_activities = lm(Grades ~ Dalc + absences + health + activities, data = student)
+Grades_studytime = lm(Grades ~ Dalc + absences + health+ activities+ studytime, data = student)
+Grades_schoolsup = lm(Grades ~ Dalc + absences + health+ activities + studytime + schoolsup, data = student)
+
+stargazer(Grades_dalc, Grades_abs, Grades_health, Grades_activities, Grades_studytime, Grades_schoolsup, se=list(cse(Grades_dalc), cse(Grades_abs), cse(Grades_health), cse(Grades_activities), cse(Grades_studytime), cse(Grades_schoolsup)), title="Grades against all else", type="text", df=FALSE, digits=3)
+
+absence_Dalc = lm(absences ~ Dalc, data = student)
+absence_health = lm(absences ~ Dalc + health, data = student)
+absence_activities = lm(absences ~ Dalc + health + activities, data = student)
+absence_studytime= lm(absences ~ Dalc + health+ activities+ studytime, data = student)
+absence_schoolsup = lm(absences ~ Dalc + health+ activities + studytime + schoolsup, data = student)
+
+stargazer(absence_Dalc, absence_health, absence_activities, absence_studytime, absence_schoolsup, se=list(cse(absence_Dalc), cse(absence_health), cse(absence_activities), cse(absence_studytime), cse(absence_schoolsup)), title="Absence against all else", type="text", df=FALSE, digits=3)
+
+# Grades_absence = lm(Grades ~ absences, data = student)
+# 
+# stargazer(Grades_absence, se=list(cse(Grades_absence)), title="Absense against Grades", type="text", df=FALSE, digits=3)
+
+# Grades_studytime = lm(Grades ~ studytime, data = student)
+# 
+# stargazer(Grades_studytime, se=list(cse(Grades_studytime)), title="Grades against study time", type="text", df=FALSE, digits=3)
+
+```
+
+## Observations:
+
+#### Does alcohol consumption affect school grades?
+
+-Simple regression is statistically significant at 10%
+
+-coefficient = 0.903
+
+-Adjusted R2 is highest with all the control variables (but still very low.)
+
+-But the only other statistically significant variables are studytime and whether or not the kid is getting supplementary help from school
+
+-Seems like absences/health doesn't affect grades much at all.
+
+
+
+#### Does alcohol consumption affect absences?
+
+-based on coefficient, not really.
+
+-but the almost 1 coefficient is always statistically significant
+
+-Adjusted R2 is highest when it's a simple regression, without any control variables.
+
+#### My recommendation: If we had to choose between these two regressions, then choose the first one (Dalc on Grades) (But even that's not very exciting)
+

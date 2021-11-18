@@ -1,0 +1,116 @@
+---
+title: 'Project 1st attempt'
+author: "Udisha"
+
+date: "November 17, 2021"
+output:
+  html_document: default
+  header-includes: \usepackage{color}
+fontsize: 12pt
+margin: 1in
+---
+
+
+```{r setup, echo=FALSE, message=F, warning=F}
+
+    rm(list = ls())
+#saving file to R files folder
+setwd("~/Downloads/Fall21/2509 ECON/Final Project")
+
+### Load the packages 
+    library(doBy)
+    library(dplyr)
+    library(foreign)
+    library(ggplot2)
+    library(knitr)
+    library(lmtest)
+    library(readstata13)
+    library(sandwich)
+    library(stargazer)
+    library(AER)
+    library(gdata)
+    library(wooldridge)
+    library(openintro)
+    library(tidyr)
+    library(tidyverse)
+
+cse=function(reg) {
+    rob=sqrt(diag(vcovHC(reg, type="HC1")))
+    return(rob)
+    }
+    
+```
+
+
+
+```{r data, echo=FALSE, message=F, warning=FALSE, include=FALSE}
+#loading the data
+student=read.csv("student-mat.csv", header=T, sep=",")
+student$urban <- ifelse(student$address == 'U', 1, 0)
+student$pstat <- ifelse(student$Pstatus == 'A', 1, 0)
+
+```
+
+
+```{r simple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+student <- student %>% rowwise() %>%
+  mutate(Grades = sum(c_across(G1:G3)))
+
+
+ggplot(student, aes(x=Dalc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Daily Alc consumption on grades", x = "Daily Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+
+ggplot(student, aes(x=Walc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Weekly Alc consumption on grades", x = "Weekly Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+```
+
+
+```{r multiple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+# Inserting scatterplot graphs of Looks on other variables.
+
+reg1 = lm(Grades ~ Dalc, data = student)
+reg2 = lm(Grades ~ Dalc + absences, data = student)
+reg3 = lm(Grades ~ Dalc + absences + schoolsup , data = student)
+reg4 = lm(Grades ~ Dalc + absences + schoolsup+ internet, data = student)
+reg5 = lm(Grades ~ Dalc + absences + schoolsup+  internet + studytime, data = student)
+reg6 = lm(Grades ~ Dalc + absences + schoolsup + internet + studytime + traveltime , data = student)
+
+stargazer(reg1, reg2, reg3, reg4, reg5, reg6, se=list(cse(reg1), cse(reg2), cse(reg3), cse(reg4), cse(reg5), cse(reg6)), title="Grades against all else", type="text", df=FALSE, digits=3)
+
+romantic1 = lm(Grades ~ romantic, data = student)
+romantic2 = lm(Grades ~ romantic + studytime , data = student)
+#romantic3 = lm(Grades ~ romantic + famrel + Pstatus, data = student)
+romantic4 = lm(Grades ~ romantic + studytime+ goout, data = student)
+romantic5 = lm(Grades ~ romantic + studytime + goout + age , data = student)
+romantic6 = lm(Grades ~ romantic + studytime + goout + age +  address, data = student)
+romantic7 = lm(Grades ~ romantic + studytime + goout + age + address + activities, data = student)
+
+
+stargazer(romantic1, romantic2, romantic4, romantic5, romantic6, romantic7, se=list(cse(romantic1), cse(romantic2), cse(romantic4), cse(romantic5), cse(romantic6), cse(romantic7)), title="Romantic against all else", type="text", df=FALSE, digits=3)
+
+
+
+```
+
+Effect of alcohol consumption on grades:
+
+We first run the regression model 1 with grades on daily alcohol consumption and see it is significant at 10% level. Since the model is a simple linear model, we suspect omitted variable bias and add other regressors to analyse the best baseline specification model.
+
+As expected, we saw the fit of the model go up from 0.3% to 4.6% after adding other regressors. 
+
+We want to study if alcohol consumption affects the grades of a student. From the star table, we notice there's a negative correlation but it is not statistically significant at standard confidence levels. 
+
+From the regression table, we see absence from school too does not have a significant effect on the grades.
+However, we notice the extra educational support has a very significant effect on grades with a 1% level.
+Having internet also positively affects the grades with a significance level of 10%.
+We noticed that study time positively affects the grades and is statistically significant at 5% whereas the travel time affects the grades negatively and is significant at 5% level.
+
+To conclude, we reject our null hypothesis of alcohol consumption affecting grades. 
+
+

@@ -1,0 +1,177 @@
+---
+title: 'Project 1st attempt'
+author: "Aashna Rungta"
+
+date: "November 13, 2021"
+output:
+  html_document: default
+  header-includes: \usepackage{color}
+fontsize: 12pt
+margin: 1in
+---
+
+
+```{r setup, echo=FALSE, message=F, warning=F}
+
+    rm(list = ls())
+#saving file to R files folder
+setwd("/Users/aashnarungta/SCU/EconometricswithR/R_files/Project")
+
+### Load the packages 
+    library(doBy)
+    library(dplyr)
+    library(foreign)
+    library(ggplot2)
+    library(knitr)
+    library(lmtest)
+    library(readstata13)
+    library(sandwich)
+    library(stargazer)
+    library(AER)
+    library(gdata)
+    library(wooldridge)
+    library(openintro)
+    library(tidyr)
+    library(tidyverse)
+
+cse=function(reg) {
+    rob=sqrt(diag(vcovHC(reg, type="HC1")))
+    return(rob)
+    }
+    
+```
+
+
+
+```{r data, echo=FALSE, message=F, warning=FALSE, include=FALSE}
+#loading the data
+student=read.csv("student-mat.csv", header=T, sep=",")
+
+```
+
+
+```{r simple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+student <- student %>% rowwise() %>%
+  mutate(Grades = sum(c_across(G1:G3)))
+
+
+ggplot(student, aes(x=Dalc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Daily Alc consumption on grades", x = "Daily Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+
+ggplot(student, aes(x=Walc, y=Grades)) + geom_point(col="blue") +
+        labs(title = "Weekly Alc consumption on grades", x = "Weekly Alcohol Consumption", y = "Grades", hjust=1, vjust=1) +
+        stat_smooth(method=lm, col = "red", se=FALSE)
+
+```
+
+
+<!-- Based solely on the above graph, it looks like there is a slightly strong positive correlation between the democracy index and log of GDP Per capita. However, we suspect that there are other variables that have an effect on GDP Per Capita, and run regressions with additional variables to compare the results- -->
+
+```{r multiple, echo=FALSE, message=F, warning=FALSE, comment=""}
+
+# Inserting scatterplot graphs of Looks on other variables.
+
+simple1 = lm(Grades ~ Dalc, data = student)
+simple2 = lm(Grades ~ Dalc + absences, data = student)
+multiple1 = lm(Grades ~ Dalc + absences + health, data = student)
+multiple2 = lm(Grades ~ Dalc + absences + health + activities, data = student)
+multiple3 = lm(Grades ~ Dalc + absences + health+ activities+ studytime, data = student)
+multiple4 = lm(Grades ~ Dalc + absences + health+ activities + studytime + schoolsup, data = student)
+
+stargazer(simple1, simple2, multiple1, multiple2, multiple3, multiple4, se=list(cse(simple1), cse(simple2), cse(multiple1), cse(multiple2), cse(multiple3), cse(multiple4)), title="Grades against all else", type="text", df=FALSE, digits=3)
+
+absence1 = lm(absences ~ Dalc, data = student)
+absence2 = lm(absences ~ Dalc + health, data = student)
+absence3 = lm(absences ~ Dalc + health + activities, data = student)
+absence4 = lm(absences ~ Dalc + health+ activities+ studytime, data = student)
+absence5 = lm(absences ~ Dalc + health+ activities + studytime + schoolsup, data = student)
+
+stargazer(absence1, absence2, absence3, absence4, absence5, se=list(cse(absence1), cse(absence2), cse(absence3), cse(absence4), cse(absence5)), title="Absense against all else", type="text", df=FALSE, digits=3)
+
+Grades_absence = lm(Grades ~ absences, data = student)
+
+stargazer(Grades_absence, se=list(cse(Grades_absence)), title="Absense against Grades", type="text", df=FALSE, digits=3)
+
+
+Grades_studytime = lm(Grades ~ studytime, data = student)
+
+stargazer(Grades_studytime, se=list(cse(Grades_studytime)), title="Absense against study time", type="text", df=FALSE, digits=3)
+
+
+romantic1 = lm(Grades ~ romantic, data = student)
+romantic2 = lm(Grades ~ romantic + famrel, data = student)
+romantic3 = lm(Grades ~ romantic + famrel + Pstatus, data = student)
+romantic4 = lm(Grades ~ romantic + famrel + Pstatus + goout, data = student)
+romantic5 = lm(Grades ~ romantic + famrel + Pstatus + goout + age , data = student)
+romantic6 = lm(Grades ~ romantic + famrel + Pstatus + goout + age +  address, data = student)
+romantic7 = lm(Grades ~ romantic + famrel + Pstatus + goout + age + address + activities, data = student)
+
+
+stargazer(romantic1, romantic2, romantic3, romantic4, romantic5, romantic6, romantic7, se=list(cse(romantic1), cse(romantic2), cse(romantic3), cse(romantic4), cse(romantic5), cse(romantic6), cse(romantic7)), title="Romantic against all else", type="text", df=FALSE, digits=3)
+
+
+student <- student %>% rowwise() %>%
+  mutate(Pedu = sum(c_across(Medu:Fedu)))
+
+Parentedu = lm(Grades ~ Pedu, data = student)
+Parentedu1 = lm(Grades ~ Pedu + famrel, data = student)
+Parentedu2 = lm(Grades ~ Pedu + famrel + schoolsup, data = student)
+Parentedu3 = lm(Grades ~ Pedu + famrel + schoolsup + famsup, data = student)
+Parentedu4 = lm(Grades ~ Pedu + famrel + schoolsup + famsup + activities, data = student)
+
+stargazer(Parentedu, Parentedu1, Parentedu2, Parentedu3, Parentedu4, se=list(cse(Parentedu), cse(Parentedu1), cse(Parentedu2), cse(Parentedu3), cse(Parentedu4)), title="Parent Edu against all else", type="text", df=FALSE, digits=3)
+
+
+
+```
+
+<!-- <!-- To analyze the above regressions, we're going to look at three different factors: the adjust R^2, the change in coefficients between regressions, and the changes in standard errors of the coefficients. --> -->
+
+<!-- <!-- Adjusted R^2: --> -->
+<!-- <!-- The biggest change we see in the R^2 is between regressions 2 and 3 - the jump from 0.376 to 0.764 shows that the third regression explains the variability in GDP Per capita almost twice as well as the previous two regressions. The Adjusted R^2 further increases in regression 4, implying that the median age is also an important factor when considering the GDP Per Capita. However, we must look at the coefficients themselves, as well as the SE of the coefficients. --> -->
+
+<!-- <!-- Coefficient and SE of coefficient: --> -->
+<!-- <!-- In our first regression, as seen in the graph above, there seems to be a positive correlation between LogGDPPC and the Democracy Index - an increase in the dem index by 1 unit increases GDP PC by 211%. Once we add the log of population to the regression, we see two things happen: --> -->
+
+<!-- <!-- 1. Coefficient of the Dem index increases, --> -->
+
+<!-- <!-- 2. Adjusted R^2 decreases. --> -->
+
+<!-- <!-- Both the above imply that the population might not be a necessary variable in explaining the GDP PC - the lower R^2 shows that the model explains the variability to a lesser degree, however the change in coefficient for the dem index says that  perhaps there was downward OVB in the first model. However: one important thing to note is that the SE on the population is high in all three regressions where it is used as a regressor - implying that the data on the  population might not be accurate, given the high margin of error. --> -->
+
+<!-- <!-- Based on the regressions above, it looks like the fourth regression model best explains the variability in GDP Per Capita. This is seen for multiple reasons- --> -->
+
+<!-- <!-- 1. The T-stat on the Dem index has shifted - while in the earlier regressions, we were getting statistically significant results, in the 4th one, it is no longer statistically significant. Based just on the t-statistic (not f-statistic), we fail to reject the null hypothesis. --> -->
+
+<!-- <!-- 2. the R^2 is the highest in the 4th regression. --> -->
+
+<!-- <!-- All of that being said, it is important to take a closer look at the population data, as the standard errors across all models are almost twice the coefficients. --> -->
+
+
+<!-- <!-- Predictions for the log of GDP per capita with democracy index = 1 and = 0: --> -->
+
+<!-- <!-- ``` {r predict(), echo=FALSE, message=F, warning=FALSE} --> -->
+<!-- <!-- newdata1<- data.frame(educ=12, age_median=35, dem_ind=1, log_pop=8.477) --> -->
+<!-- <!-- predict(multiple3, newdata1) --> -->
+<!-- <!-- newdata2<- data.frame(educ=12, age_median=35, dem_ind=0, log_pop=8.477) --> -->
+<!-- <!-- predict(multiple3, newdata2) --> -->
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- Predictions for the REAL GDP per capita with democracy index = 1 and = 0: --> -->
+
+
+<!-- <!-- ``` {r exponent(), echo=FALSE, message=F, warning=FALSE} --> -->
+
+<!-- <!-- exp(predict(multiple3,newdata1)) --> -->
+<!-- <!-- exp(predict(multiple3,newdata2)) --> -->
+
+
+<!-- <!-- ``` --> -->
+
+<!-- <!-- When predicting the results of the effect of dem index on the log of GDP Per capita, we first think that there isn't too much of an effect, since there isn't much of a gap between 10.36 and 10.19. However, once we exponentiate the regressions, we see that there is in fact a significant change: --> -->
+
+<!-- <!-- When the democracy index = 0, the Real GDP Per Capita is 26901 USD, whereas when democracy index = 1, the Real GDP Per Capita is $31624. The almost- 5000 (approx 16%) USD gap shows that there might be an argument made for causation. That is, that there is a high chance that democratic countries have a generally higher GDP, and therefore income per capita. --> -->
